@@ -43,13 +43,6 @@ venv.bak/
 *.sqlite
 *.sqlite3
 
-# 上传文件
-uploads/
-*.jpg
-*.jpeg
-*.png
-*.bmp
-*.heic
 
 # 日志
 *.log
