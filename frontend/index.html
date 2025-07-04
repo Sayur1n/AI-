@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI模特试衣系统</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            color: white;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        .upload-section, .history-section {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+
+        .section-title {
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+            color: #333;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        .upload-form {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .file-input-group {
+            position: relative;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .file-label {
+            display: block;
+            padding: 15px;
+            border: 2px dashed #667eea;
+            border-radius: 10px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: #f8f9ff;
+        }
+
+        .file-label:hover {
+            border-color: #764ba2;
+            background: #f0f2ff;
+        }
+
+        .file-label.has-file {
+            border-color: #28a745;
+            background: #f8fff9;
+        }
+
+        .file-preview {
+            margin-top: 10px;
+            max-width: 100%;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+
+        .submit-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 20px;
+        }
+
+        .submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .submit-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .task-list {
+            max-height: 600px;
+            overflow-y: auto;
+        }
+
+        .task-item {
+            border: 1px solid #e0e0e0;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 15px;
+            background: #fafafa;
+            transition: all 0.3s ease;
+        }
+
+        .task-item:hover {
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            transform: translateY(-2px);
+        }
+
+        .task-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .task-status {
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: bold;
+        }
+
+        .status-pending { background: #fff3cd; color: #856404; }
+        .status-running { background: #d1ecf1; color: #0c5460; }
+        .status-succeeded { background: #d4edda; color: #155724; }
+        .status-failed { background: #f8d7da; color: #721c24; }
+
+        .task-images {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .task-image {
+            width: 100%;
+            height: 100px;
+            object-fit: cover;
+            border-radius: 8px;
+            border: 2px solid #e0e0e0;
+        }
+
+        .task-result {
+            text-align: center;
+            margin-top: 15px;
+        }
+
+        .result-image {
+            max-width: 100%;
+            max-height: 300px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .refresh-btn {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+
+        .refresh-btn:hover {
+            background: #218838;
+        }
+
+        .error-message {
+            color: #dc3545;
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            border-radius: 5px;
+            padding: 10px;
+            margin: 10px 0;
+        }
+
+        .success-message {
+            color: #155724;
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            border-radius: 5px;
+            padding: 10px;
+            margin: 10px 0;
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>👗 AI模特试衣系统</h1>
+            <p>上传人像和服装图片，体验AI智能试衣效果</p>
+        </div>
+
+        <div class="main-content">
+            <!-- 上传区域 -->
+            <div class="upload-section">
+                <h2 class="section-title">📤 上传图片</h2>
+                <form class="upload-form" id="uploadForm">
+                    <div class="file-input-group">
+                        <label class="file-label" for="personImage">
+                            <strong>👤 人像图片 *</strong><br>
+                            <small>请上传包含完整人像的图片</small>
+                        </label>
+                        <input type="file" id="personImage" class="file-input" accept="image/*" required>
+                        <img id="personPreview" class="file-preview" style="display: none;">
+                    </div>
+
+                    <div class="file-input-group">
+                        <label class="file-label" for="topGarment">
+                            <strong>👕 上装图片</strong><br>
+                            <small>上传上装平铺图（可选）</small>
+                        </label>
+                        <input type="file" id="topGarment" class="file-input" accept="image/*">
+                        <img id="topPreview" class="file-preview" style="display: none;">
+                    </div>
+
+                    <div class="file-input-group">
+                        <label class="file-label" for="bottomGarment">
+                            <strong>👖 下装图片</strong><br>
+                            <small>上传下装平铺图（可选）</small>
+                        </label>
+                        <input type="file" id="bottomGarment" class="file-input" accept="image/*">
+                        <img id="bottomPreview" class="file-preview" style="display: none;">
+                    </div>
+
+                    <button type="submit" class="submit-btn" id="submitBtn">
+                        🚀 开始AI试衣
+                    </button>
+                </form>
+
+                <div class="loading" id="loading">
+                    <div class="spinner"></div>
+                    <p>正在处理中，请稍候...</p>
+                </div>
+
+                <div id="message"></div>
+            </div>
+
+            <!-- 历史记录区域 -->
+            <div class="history-section">
+                <h2 class="section-title">📋 历史记录</h2>
+                <div class="task-list" id="taskList">
+                    <p style="text-align: center; color: #666;">加载中...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 文件预览功能
+        function setupFilePreview(inputId, previewId, labelId) {
+            const input = document.getElementById(inputId);
+            const preview = document.getElementById(previewId);
+            const label = document.querySelector(`label[for="${inputId}"]`);
+
+            input.addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        preview.src = e.target.result;
+                        preview.style.display = 'block';
+                        label.classList.add('has-file');
+                        label.innerHTML = `<strong>✅ ${file.name}</strong><br><small>文件已选择</small>`;
+                    };
+                    reader.readAsDataURL(file);
+                } else {
+                    preview.style.display = 'none';
+                    label.classList.remove('has-file');
+                }
+            });
+        }
+
+        // 设置文件预览
+        setupFilePreview('personImage', 'personPreview', 'personImage');
+        setupFilePreview('topGarment', 'topPreview', 'topGarment');
+        setupFilePreview('bottomGarment', 'bottomPreview', 'bottomGarment');
+
+        // 表单提交
+        document.getElementById('uploadForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const personImage = document.getElementById('personImage').files[0];
+            const topGarment = document.getElementById('topGarment').files[0];
+            const bottomGarment = document.getElementById('bottomGarment').files[0];
+
+            if (!personImage) {
+                showMessage('请选择人像图片', 'error');
+                return;
+            }
+
+            if (!topGarment && !bottomGarment) {
+                showMessage('请至少选择一件服装（上装或下装）', 'error');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('person_image', personImage);
+            if (topGarment) formData.append('top_garment', topGarment);
+            if (bottomGarment) formData.append('bottom_garment', bottomGarment);
+
+            const submitBtn = document.getElementById('submitBtn');
+            const loading = document.getElementById('loading');
+
+            submitBtn.disabled = true;
+            loading.style.display = 'block';
+            showMessage('', '');
+
+            try {
+                const response = await fetch('/api/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    showMessage(result.message, 'success');
+                    // 重置表单
+                    document.getElementById('uploadForm').reset();
+                    document.querySelectorAll('.file-preview').forEach(preview => {
+                        preview.style.display = 'none';
+                    });
+                    document.querySelectorAll('.file-label').forEach(label => {
+                        label.classList.remove('has-file');
+                        label.innerHTML = label.innerHTML.replace(/✅.*?<\/strong>/, '');
+                    });
+                    // 刷新任务列表
+                    loadTasks();
+                } else {
+                    showMessage(result.detail || '上传失败', 'error');
+                }
+            } catch (error) {
+                showMessage('网络错误，请重试', 'error');
+            } finally {
+                submitBtn.disabled = false;
+                loading.style.display = 'none';
+            }
+        });
+
+        // 显示消息
+        function showMessage(message, type) {
+            const messageDiv = document.getElementById('message');
+            if (message) {
+                messageDiv.innerHTML = `<div class="${type}-message">${message}</div>`;
+            } else {
+                messageDiv.innerHTML = '';
+            }
+        }
+
+        // 加载任务列表
+        async function loadTasks() {
+            try {
+                const response = await fetch('/api/tasks');
+                const data = await response.json();
+                
+                const taskList = document.getElementById('taskList');
+                
+                if (data.tasks.length === 0) {
+                    taskList.innerHTML = '<p style="text-align: center; color: #666;">暂无任务记录</p>';
+                    return;
+                }
+
+                taskList.innerHTML = data.tasks.map(task => `
+                    <div class="task-item">
+                        <div class="task-header">
+                            <span>任务ID: ${task.id.substring(0, 8)}...</span>
+                            <span class="task-status status-${task.status.toLowerCase()}">${getStatusText(task.status)}</span>
+                        </div>
+                        
+                        <div class="task-images">
+                            <img src="${task.person_image_url}" alt="人像" class="task-image">
+                            ${task.top_garment_url ? `<img src="${task.top_garment_url}" alt="上装" class="task-image">` : ''}
+                            ${task.bottom_garment_url ? `<img src="${task.bottom_garment_url}" alt="下装" class="task-image">` : ''}
+                        </div>
+
+                        ${task.result_image_url ? `
+                            <div class="task-result">
+                                <h4>🎉 试衣结果</h4>
+                                <img src="${task.result_image_url}" alt="结果" class="result-image">
+                            </div>
+                        ` : ''}
+
+                        ${task.error_message ? `
+                            <div class="error-message">
+                                <strong>错误信息:</strong> ${task.error_message}
+                            </div>
+                        ` : ''}
+
+                        <div style="margin-top: 10px;">
+                            <small>创建时间: ${new Date(task.created_at).toLocaleString()}</small>
+                            ${task.status === 'PENDING' || task.status === 'RUNNING' ? `
+                                <button class="refresh-btn" onclick="refreshTask('${task.id}')">🔄 刷新状态</button>
+                            ` : ''}
+                        </div>
+                    </div>
+                `).join('');
+            } catch (error) {
+                document.getElementById('taskList').innerHTML = '<p style="text-align: center; color: #dc3545;">加载失败，请刷新页面重试</p>';
+            }
+        }
+
+        // 获取状态文本
+        function getStatusText(status) {
+            const statusMap = {
+                'PENDING': '排队中',
+                'RUNNING': '处理中',
+                'SUCCEEDED': '已完成',
+                'FAILED': '失败'
+            };
+            return statusMap[status] || status;
+        }
+
+        // 刷新任务状态
+        async function refreshTask(taskId) {
+            try {
+                const response = await fetch(`/api/tasks/${taskId}/refresh`, {
+                    method: 'POST'
+                });
+                
+                if (response.ok) {
+                    loadTasks(); // 重新加载任务列表
+                } else {
+                    alert('刷新失败，请重试');
+                }
+            } catch (error) {
+                alert('网络错误，请重试');
+            }
+        }
+
+        // 页面加载时获取任务列表
+        document.addEventListener('DOMContentLoaded', function() {
+            loadTasks();
+            
+            // 每30秒自动刷新一次
+            setInterval(loadTasks, 30000);
+        });
+    </script>
+</body>
+</html> 
